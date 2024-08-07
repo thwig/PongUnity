@@ -9,33 +9,34 @@ public class PaddleAI : MonoBehaviour
     [SerializeField] float range;
 
     Rigidbody2D rb;
+    private float restingPos;
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
+        restingPos = rb.position.y;
     }
 
     // Update is called once per frame
     void FixedUpdate()
     {
-        float target = Mathf.Lerp(rb.velocity.y, Predict(), 0.1f);
         float minY = -range;
         float maxY = range;
         float currentY = rb.position.y;
+        float target = BallController.StoredPosition.y * 2;       
 
-        if (currentY <= minY && target < 0) target = 0;
-        if (currentY >= maxY && target > 0) target = 0;
-
-        rb.velocity = new Vector2(rb.velocity.x, target);
-        rb.velocity *= difficulty;
+        if (BallController.StoredPosition.x >= 0) Exterpolate(target);       
+        else Exterpolate(restingPos);
+        
         Vector2 clampedPos = rb.position;
-        clampedPos.y = Mathf.Clamp(clampedPos.y, -range, range);
+        clampedPos.y = Mathf.Clamp(clampedPos.y, minY, maxY);
         rb.position = clampedPos;
-
-         Debug.Log($"Target Velocity: {target}, Current Y: {currentY}, Predicted Y: {Predict()}");
     }
 
-    float Predict()
+    void Exterpolate (float target)
     {
-        return BallController.StoredVelocity.y * 1.2f / BallController.StoredVelocity.x * 1.2f;
+        // Finds a target point
+        Debug.Log($"Target: {target}");
+        if (rb.position.y != target) rb.velocity = new Vector2 (rb.velocity.x, target);   
+        return;
     }
 }

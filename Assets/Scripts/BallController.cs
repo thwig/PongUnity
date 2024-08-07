@@ -16,9 +16,15 @@ public class BallController : MonoBehaviour
     private float speedScalar;
     private bool hasBouncedOnce = false;
     private static Vector2 storedVelocity;
+    private static Vector2 storedPosition;
     public static Vector2 StoredVelocity
     {
         get { return storedVelocity; }
+    }
+
+    public static Vector2 StoredPosition
+    {
+        get { return storedPosition; }
     }
 
     void Start()
@@ -34,6 +40,7 @@ public class BallController : MonoBehaviour
         rb.velocity = new(iHat, jHat);
         rb.velocity *= speedScalar;
         storedVelocity = rb.velocity;
+        storedPosition = rb.position;
     }
 
     void OnTriggerEnter2D(Collider2D collision)
