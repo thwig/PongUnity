@@ -56,7 +56,7 @@
         "temp/": true,
         "Temp/": true
     },
-    "dotnet.defaultSolution": "Pong.sln",
+    "dotnet.defaultSolution": "PongUnity.sln",
     "editor.acceptSuggestionOnCommitCharacter": false,
     "editor.acceptSuggestionOnEnter": "off"
 }
