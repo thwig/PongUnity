@@ -23,7 +23,7 @@ public class PlayerPaddleController : MonoBehaviour
     }
 
     // Update is called once per frame
-    void FixedUpdate()
+    void Update()
     {
         float movement = Input.GetAxis("Vertical");
         float newVelY = movement * paddleSpeed;

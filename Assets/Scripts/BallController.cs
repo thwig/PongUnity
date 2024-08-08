@@ -27,6 +27,10 @@ public class BallController : MonoBehaviour
         get { return storedPosition; }
     }
 
+    public BallController()
+    {
+        
+    }
     void Start()
     {
         rb = gameObject.GetComponent<Rigidbody2D>();
