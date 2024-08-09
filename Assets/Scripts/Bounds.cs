@@ -1,16 +1,39 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
+using PongUnity.CoreConstants;
 
 public class Bounds : MonoBehaviour
 {
     // Start is called before the first frame update
-    [SerializeField] private Camera cam;
-    [SerializeField] private float boundsWidth = 1f;
-    GameObject bounds, top, bottom, left, right;
-    BoxCollider2D topBox, bottomBox, leftBox, rightBox;
+    private const float OriginX = 0f; 
+    private const float OriginY = 0f;
+    public struct VerticalBounds
+    {
+        private float min;
+        private float max;
 
-    void Start()
+        public float Min { get => min; set => min = value; }
+        public float Max { get => max; set => max = value; }
+    };
+    [SerializeField] private float boundsWidth = 1f;
+    private static GameObject bounds, top, bottom, left, right;
+    private BoxCollider2D topBox, bottomBox, leftBox, rightBox;
+    private static VerticalBounds yLimiter;
+    private protected static Camera cam;
+    public static VerticalBounds YLimiter
+    {
+        get 
+        {
+            return yLimiter;
+        }
+    }
+    public static Vector2 TopPos { get => top.transform.position;}
+    public static Vector2 BottomPos { get => bottom.transform.position;}
+    public static Vector2 LeftPos { get => left.transform.position;}
+    public static Vector2 RightPos {get => right.transform.position;}
+    void Awake()
     {
         bounds = gameObject;
         cam = GetComponentInParent<Camera>();
@@ -18,6 +41,30 @@ public class Bounds : MonoBehaviour
         CreateBarriers();
     }
 
+    internal class CamBounds
+    {
+        #region Fields
+        
+        // Gets the bounds of the cam viewport and converts them to worldspace coords
+        private static readonly Vector3 _topRight = cam.ViewportToWorldPoint(new Vector3(1f, 1f, cam.nearClipPlane));
+        private static readonly Vector3 _bottomLeft = cam.ViewportToWorldPoint(new Vector3(0f, 0f, cam.nearClipPlane));
+        private static readonly Vector3 _vpCenter = cam.ViewportToWorldPoint(new Vector3(0.5f, 0.5f, cam.nearClipPlane));
+        private static readonly float _vpWidth = _topRight.x - _bottomLeft.x;
+        private static readonly float _vpHeight = _topRight.y - _bottomLeft.y;
+
+        #endregion
+
+        #region Properties
+
+        // For getting the bounds fields
+        public static Vector3 TopRight { get => _topRight; }
+        public static Vector3 BottomLeft { get => _bottomLeft; }
+        public static Vector3 VpCenter { get => _vpCenter; }
+        public static float VpWidth { get => _vpWidth; }
+        public static float VpHeight { get => _vpHeight; }
+
+        #endregion     
+    }
     // Update is called once per frame
     void Update()
     {
@@ -27,10 +74,10 @@ public class Bounds : MonoBehaviour
     public void CreateBarriers()
     {
         //create objects
-        top = new ("Top");
-        bottom = new GameObject("Bottom");
-        left = new GameObject("Left");
-        right = new GameObject("Right");
+        top = new(Names.Top);
+        bottom = new(Names.Bottom);
+        left = new(Names.Left);
+        right = new(Names.Right);
         
         //set tags for the objects
         top.tag = Tags.WallTag;
@@ -38,42 +85,43 @@ public class Bounds : MonoBehaviour
         left.tag = Tags.P1GoalTag;
         right.tag = Tags.P2GoalTag;
 
-        //camera dimensions
-        Vector3 topRight = cam.ViewportToWorldPoint(new Vector3(1f, 1f, cam.nearClipPlane));
-        Vector3 bottomLeft = cam.ViewportToWorldPoint(new Vector3(0f, 0f, cam.nearClipPlane));
-        Vector3 vpCenter = cam.ViewportToWorldPoint(new Vector3(0.5f, 0.5f, cam.nearClipPlane));
-        float vpWidth = topRight.x - bottomLeft.x;
-        float vpHeight = topRight.y - bottomLeft.y;
-        
-        //make bounds object the parent
+        // Make bounds object the parent
         top.transform.SetParent(bounds.transform, false);
         bottom.transform.SetParent(bounds.transform, false);
         left.transform.SetParent(bounds.transform, false);
         right.transform.SetParent(bounds.transform, false); 
         
-        //position the barriers top and bottom
-        Vector3 topPos = new(vpCenter.x, topRight.y, cam.nearClipPlane);
-        Vector3 bottomPos = new(vpCenter.x, bottomLeft.y, cam.nearClipPlane);
-        Vector3 leftPos = new(bottomLeft.x, vpCenter.y, cam.nearClipPlane);
-        Vector3 rightPos = new(topRight.x, vpCenter.x, cam.nearClipPlane);
+        // Position the barriers top and bottom
+        Vector3 topPos = new(CamBounds.VpCenter.x, CamBounds.TopRight.y, cam.nearClipPlane);
+        Vector3 bottomPos = new(CamBounds.VpCenter.x, CamBounds.BottomLeft.y, cam.nearClipPlane);
+        Vector3 leftPos = new(CamBounds.BottomLeft.x, CamBounds.VpCenter.y, cam.nearClipPlane);
+        Vector3 rightPos = new(CamBounds.TopRight.x, CamBounds.VpCenter.x, cam.nearClipPlane);
+
+        // Store this position for range limiters of paddles
+        yLimiter.Max = topPos.y - boundsWidth;
+        yLimiter.Min = bottomPos.y + boundsWidth; 
 
         top.transform.position = topPos;
         bottom.transform.position = bottomPos;
         left.transform.position = leftPos;
         right.transform.position = rightPos;
         
-        //create box colliders
+        // Create box colliders
         topBox = top.AddComponent<BoxCollider2D> ();
         bottomBox = bottom.AddComponent<BoxCollider2D> ();
         leftBox = left.AddComponent<BoxCollider2D> ();
         rightBox = right.AddComponent<BoxCollider2D> ();
-
+        
         //Declare the sizes of the boxes
-        topBox.size = new Vector2(vpWidth, boundsWidth);
-        bottomBox.size = new Vector2(vpWidth, boundsWidth);
-        leftBox.size = new Vector2(boundsWidth, vpHeight);
-        rightBox.size = new Vector2(boundsWidth, vpHeight);
-
+        topBox.size = new Vector2(CamBounds.VpWidth, boundsWidth);
+        bottomBox.size = new Vector2(CamBounds.VpWidth, boundsWidth);
+        leftBox.size = new Vector2(boundsWidth, CamBounds.VpHeight);
+        rightBox.size = new Vector2(boundsWidth, CamBounds.VpHeight);
+        
+        top.tag = Tags.WallTag;
+        bottom.tag = Tags.WallTag;
+        left.tag = Tags.P1GoalTag;
+        right.tag = Tags.P2GoalTag;
         //These will be the goals
         topBox.isTrigger = true;
         bottomBox.isTrigger = true;

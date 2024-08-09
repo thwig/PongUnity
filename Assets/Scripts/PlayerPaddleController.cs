@@ -1,44 +1,69 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class PlayerPaddleController : MonoBehaviour
 {
-    // Start is called before the first frame update
+    // Fields for tweaking in Unity
     [SerializeField] float paddleSpeed;
     [SerializeField] float range;
+    [SerializeField] float velocityTweak;
 
-    private static Vector2 storedVelocity;
-    Rigidbody2D rb;
-    BoxCollider2D bc;
+    // Float fields
+    private static float storedPaddleVelocity;
+    private float deltaPos;
+    private float previousPos;
+    private float timeInterval = 0.01f;
+    private float paddleVelocity;
+    private float yRange;
 
-    public static Vector2 StoredVelocity
+    // Components
+    private Rigidbody2D rb;
+    private BoxCollider2D bc;
+    private SpriteRenderer sr;
+
+    // Properties
+    public static float StoredPaddleVelocity
     {
-        get { return storedVelocity; }
+        get { return storedPaddleVelocity; }
     }
+
+    // Start is called when game initializes
     void Start()
     {
+        Paddles.InitializePaddlePosition(gameObject.transform);
         rb = GetComponent<Rigidbody2D> ();
         bc = GetComponent<BoxCollider2D> ();
+        sr = GetComponent<SpriteRenderer>();
+        previousPos = rb.position.y;
     }
 
-    // Update is called once per frame
-    void Update()
+    // Called at a fixed rate
+    void FixedUpdate()
     {
-        float movement = Input.GetAxis("Vertical");
-        float newVelY = movement * paddleSpeed;
-        float minY = -range;
-        float maxY = range;
-        float currentY = rb.position.y;
-
-        if (currentY <= minY && newVelY < 0) newVelY = 0;
-        if (currentY >= maxY && newVelY > 0) newVelY = 0;
-
-        rb.velocity = new Vector2(rb.velocity.x, newVelY);
-        Vector2 clampedPos = rb.position;
-        clampedPos.y = Mathf.Clamp(clampedPos.y, -range, range);
+        float movement = Input.GetAxisRaw("Vertical") * Time.deltaTime * paddleSpeed;
+        Vector2 newPosition = new(rb.position.x, rb.position.y + movement);
+        float minY = Bounds.BottomPos.y + bc.size.y;
+        float maxY = Bounds.TopPos.y - bc.size.y;
+        yRange = Mathf.Clamp(newPosition.y, minY, maxY);
+        Vector2 clampedPos = new(rb.position.x, yRange);
+        
         rb.position = clampedPos;
-
-        storedVelocity = rb.velocity;
+        Invoke(nameof(PaddleVelocity), timeInterval);
+        storedPaddleVelocity = paddleVelocity;
+        
     }
+
+    //
+    void PaddleVelocity()
+    {
+        float currentPos = yRange;
+        deltaPos = currentPos - previousPos;
+        paddleVelocity = deltaPos/timeInterval;
+        
+        previousPos = currentPos;
+    }
+
+    
 }
