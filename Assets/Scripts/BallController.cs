@@ -16,12 +16,13 @@ public class BallController : MonoBehaviour
     private static Vector2 _storedPosition;
     private static int _bounceCounter;
     private static bool _crossedNet;
+    
 
     
     // Fields
     private float _speedScalar;
     private int _velDirection;
-    
+    private float currentHorizontalDirection, currentVerticalDirection;
     // Components
     private Rigidbody2D _rb;
     private CircleCollider2D _circleCollider;
@@ -31,7 +32,7 @@ public class BallController : MonoBehaviour
     public static int BounceCounter { get => _bounceCounter; }
     public static Vector2 StoredVelocity { get => _storedVelocity; }
     public static Vector2 StoredPosition { get => _storedPosition; }
-    public static bool CrossedNet { get => _crossedNet; set => _crossedNet = value;}
+    public static bool CrossedNet { get => _crossedNet; set => _crossedNet = value; }
     
     void Start()
     {
@@ -40,7 +41,8 @@ public class BallController : MonoBehaviour
         _sr = gameObject.GetComponent<SpriteRenderer>();
         _circleCollider.radius = _sr.size.x - 0.1f;
         _speedScalar = defaultSpeedScalar;
-        UpdateBallVelocity();
+        CrossedNet = true;
+        DefaultBallVelocity();
     }
     
     // Handle collisions
@@ -62,7 +64,7 @@ public class BallController : MonoBehaviour
 
             case Tags.P2GoalTag:
                 Scoring.P2Score++;
-                RestoreBallPosition();
+                HandleGoalCollision(Tags.P2GoalTag);
                 Debug.Log("Player 2 Score: " + Scoring.P2Score);
                 
                 UpdateBallVelocity();
@@ -79,16 +81,6 @@ public class BallController : MonoBehaviour
         switch (collision.gameObject.tag)
         {
             case Tags.NetTag:
-                Debug.Log("Exit");
-                _crossedNet = false;
-                break;
-        }
-    }
-    void OnTriggerStay2D (Collider2D collision)
-    {
-        switch (collision.gameObject.tag)
-        {
-            case Tags.NetTag:
                 _crossedNet = false;
                 break;
         }
@@ -96,7 +88,7 @@ public class BallController : MonoBehaviour
 
     void HandleWallCollision()
     {
-        verticalDirection *= DirectionChangeMultiplier;
+        currentVerticalDirection *= DirectionChangeMultiplier;
         if (_speedScalar > defaultSpeedScalar) _speedScalar *= speedReducer;
         else _speedScalar = defaultSpeedScalar;
         
@@ -106,16 +98,23 @@ public class BallController : MonoBehaviour
     }
     void HandlePaddleCollision()
     {
-        horizontalDirection *= DirectionChangeMultiplier;
-        _velDirection = (int) Mathf.Sign(PlayerPaddleController.StoredPaddleVelocity);
-        _speedScalar += Mathf.Abs(PlayerPaddleController.StoredPaddleVelocity) * paddleVelocityTweak;
+        currentHorizontalDirection *= DirectionChangeMultiplier;
+        float paddleVelocity = PlayerPaddleController.StoredPaddleVelocity;
+        if (paddleVelocity == 0)
+        {
+            currentVerticalDirection *= Mathf.Sign(paddleVelocity);
+            UpdateBallVelocity();
+            return;
+        }
+        _velDirection = (int) Mathf.Sign(paddleVelocity);
+        _speedScalar += Mathf.Abs(paddleVelocity) * paddleVelocityTweak;
         if (_velDirection >= 0)
         { 
-            verticalDirection = -Mathf.Abs(verticalDirection) * DirectionChangeMultiplier;
+            currentVerticalDirection = -Mathf.Abs(currentVerticalDirection) * DirectionChangeMultiplier;
         }
         else 
         {
-            verticalDirection = Mathf.Abs(verticalDirection) * DirectionChangeMultiplier;
+            currentVerticalDirection = Mathf.Abs(currentVerticalDirection) * DirectionChangeMultiplier;
         }
 
         UpdateBallVelocity();
@@ -126,36 +125,39 @@ public class BallController : MonoBehaviour
         {
             case Tags.P1GoalTag:   
                 Scoring.P1Score++;
-                
                 RestoreBallPosition();
-                UpdateBallVelocity();
                 break;
 
             case Tags.P2GoalTag:
                 Scoring.P2Score++;
-
                 RestoreBallPosition();
-                UpdateBallVelocity();
                 break;
         }
     }
 
     void HandleNetCollision()
     {
-        Debug.Log("Entered");
+        Debug.Log("Hit the net");
         _crossedNet = true;
     }
     void RestoreBallPosition()
     {
         gameObject.transform.position = new Vector2(0f, 0f);
-        _speedScalar = defaultSpeedScalar;
-        horizontalDirection *= DirectionChangeMultiplier;
-        verticalDirection *= DirectionChangeMultiplier;
+        
     }
-
-    void UpdateBallVelocity()
+    void DefaultBallVelocity()
     {
         _rb.velocity = new Vector2(horizontalDirection, verticalDirection).normalized * _speedScalar;
+        currentHorizontalDirection = horizontalDirection;
+        currentVerticalDirection = verticalDirection;
+    }
+    void UpdateBallVelocity()
+    {
+        if (_speedScalar < defaultSpeedScalar)
+        {
+            _speedScalar = defaultSpeedScalar;
+        }
+        _rb.velocity = new Vector2(currentHorizontalDirection, currentVerticalDirection).normalized * _speedScalar;
         _storedVelocity = _rb.velocity;
         _storedPosition = _rb.position;
     }

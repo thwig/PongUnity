@@ -24,10 +24,13 @@ namespace PongUnity.CoreConstants
     {
         public const float OriginX = 0f;
         public const float OriginY = 0f;
+        public const float OriginZ = 0f;
     }
 
     public class Layers : MonoBehaviour
     {
         public const string CollisionLayer = "Collision Layer";
+        public const int IgnoreRayCast = 2;
+        public const int Default = 0;
     }
 }

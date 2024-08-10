@@ -34,6 +34,7 @@ public class Bounds : MonoBehaviour
     public static Vector2 LeftPos { get => left.transform.position;}
     public static Vector2 RightPos {get => right.transform.position;}
     public static float BoundsWidth { get => _boundsWidth; }
+    public static float Center { get => RightPos.x - LeftPos.x; }
     void Awake()
     {
         bounds = gameObject;
