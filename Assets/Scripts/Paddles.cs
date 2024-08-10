@@ -8,10 +8,9 @@ public class Paddles : MonoBehaviour
     private static float s_offset;
     private Vector2 _paddlePos;
     public Vector2 PaddlePos { get => _paddlePos; }
-    void Start()
+    void Awake()
     {
         s_offset = offset;
-
     }
     public static void InitializePaddlePosition(Transform paddle)
     {

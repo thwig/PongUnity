@@ -17,7 +17,7 @@ public class Bounds : MonoBehaviour
         public float Min { get => min; set => min = value; }
         public float Max { get => max; set => max = value; }
     };
-    [SerializeField] private float boundsWidth = 1f;
+    private static readonly float _boundsWidth = 0.3f;
     private static GameObject bounds, top, bottom, left, right;
     private BoxCollider2D topBox, bottomBox, leftBox, rightBox;
     private static VerticalBounds yLimiter;
@@ -33,6 +33,7 @@ public class Bounds : MonoBehaviour
     public static Vector2 BottomPos { get => bottom.transform.position;}
     public static Vector2 LeftPos { get => left.transform.position;}
     public static Vector2 RightPos {get => right.transform.position;}
+    public static float BoundsWidth { get => _boundsWidth; }
     void Awake()
     {
         bounds = gameObject;
@@ -98,8 +99,8 @@ public class Bounds : MonoBehaviour
         Vector3 rightPos = new(CamBounds.TopRight.x, CamBounds.VpCenter.x, cam.nearClipPlane);
 
         // Store this position for range limiters of paddles
-        yLimiter.Max = topPos.y - boundsWidth;
-        yLimiter.Min = bottomPos.y + boundsWidth; 
+        yLimiter.Max = topPos.y - _boundsWidth;
+        yLimiter.Min = bottomPos.y + _boundsWidth; 
 
         top.transform.position = topPos;
         bottom.transform.position = bottomPos;
@@ -113,15 +114,16 @@ public class Bounds : MonoBehaviour
         rightBox = right.AddComponent<BoxCollider2D> ();
         
         //Declare the sizes of the boxes
-        topBox.size = new Vector2(CamBounds.VpWidth, boundsWidth);
-        bottomBox.size = new Vector2(CamBounds.VpWidth, boundsWidth);
-        leftBox.size = new Vector2(boundsWidth, CamBounds.VpHeight);
-        rightBox.size = new Vector2(boundsWidth, CamBounds.VpHeight);
+        topBox.size = new Vector2(CamBounds.VpWidth, _boundsWidth);
+        bottomBox.size = new Vector2(CamBounds.VpWidth, _boundsWidth);
+        leftBox.size = new Vector2(_boundsWidth, CamBounds.VpHeight);
+        rightBox.size = new Vector2(_boundsWidth, CamBounds.VpHeight);
         
         top.tag = Tags.WallTag;
         bottom.tag = Tags.WallTag;
         left.tag = Tags.P1GoalTag;
         right.tag = Tags.P2GoalTag;
+
         //These will be the goals
         topBox.isTrigger = true;
         bottomBox.isTrigger = true;

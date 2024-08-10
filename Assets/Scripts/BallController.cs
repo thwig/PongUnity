@@ -1,7 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using UnityEditor.Callbacks;
 using UnityEngine;
 using PongUnity.CoreConstants;
 
@@ -15,15 +11,28 @@ public class BallController : MonoBehaviour
     [SerializeField] private float horizontalDirection = 1, verticalDirection = 1, defaultSpeedScalar, speedReducer = 0.5f;
     [SerializeField] private float paddleVelocityTweak;
     
-    // Float fields
+    // Static Fields
+    private static Vector2 _storedVelocity;
+    private static Vector2 _storedPosition;
+    private static int _bounceCounter;
+    private static bool _crossedNet;
+
+    
+    // Fields
     private float _speedScalar;
     private int _velDirection;
-
+    
     // Components
     private Rigidbody2D _rb;
     private CircleCollider2D _circleCollider;
     private SpriteRenderer _sr;
 
+    // Properties
+    public static int BounceCounter { get => _bounceCounter; }
+    public static Vector2 StoredVelocity { get => _storedVelocity; }
+    public static Vector2 StoredPosition { get => _storedPosition; }
+    public static bool CrossedNet { get => _crossedNet; set => _crossedNet = value;}
+    
     void Start()
     {
         _rb = gameObject.GetComponent<Rigidbody2D>();
@@ -58,14 +67,41 @@ public class BallController : MonoBehaviour
                 
                 UpdateBallVelocity();
                 break;
+            
+            case Tags.NetTag:
+                HandleNetCollision();
+                break;
         }
     }
+
+    void OnTriggerExit2D (Collider2D collision)
+    {
+        switch (collision.gameObject.tag)
+        {
+            case Tags.NetTag:
+                Debug.Log("Exit");
+                _crossedNet = false;
+                break;
+        }
+    }
+    void OnTriggerStay2D (Collider2D collision)
+    {
+        switch (collision.gameObject.tag)
+        {
+            case Tags.NetTag:
+                _crossedNet = false;
+                break;
+        }
+    }
+
     void HandleWallCollision()
     {
         verticalDirection *= DirectionChangeMultiplier;
         if (_speedScalar > defaultSpeedScalar) _speedScalar *= speedReducer;
         else _speedScalar = defaultSpeedScalar;
         
+        _bounceCounter++;
+
         UpdateBallVelocity();   
     }
     void HandlePaddleCollision()
@@ -103,6 +139,12 @@ public class BallController : MonoBehaviour
                 break;
         }
     }
+
+    void HandleNetCollision()
+    {
+        Debug.Log("Entered");
+        _crossedNet = true;
+    }
     void RestoreBallPosition()
     {
         gameObject.transform.position = new Vector2(0f, 0f);
@@ -114,7 +156,8 @@ public class BallController : MonoBehaviour
     void UpdateBallVelocity()
     {
         _rb.velocity = new Vector2(horizontalDirection, verticalDirection).normalized * _speedScalar;
-
+        _storedVelocity = _rb.velocity;
+        _storedPosition = _rb.position;
     }
 
     
